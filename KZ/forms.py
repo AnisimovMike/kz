@@ -11,3 +11,7 @@ class UserForm(forms.Form):
 
 class LoadObject(forms.Form):
     obj_id = forms.IntegerField()
+
+
+class EntityCatalog(forms.Form):
+    entity = forms.IntegerField()

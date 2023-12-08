@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .forms import UserForm, LoadObject
+from .forms import UserForm, LoadObject, EntityCatalog
 from .models import Graphic, Object
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
@@ -55,16 +55,74 @@ def index(request):
 
 
 def get_list(request):
+    form = EntityCatalog()
     if request.method == "POST":
-        first = Object.objects.all().values()
-        second = Graphic.objects.all().values()
-        cur_mes1 = f'{first}'
-        cur_mes2 = f'{first}'
+        entity = request.POST.get("entity")
+        if entity == '1':
+            bd_name = 'Объекты'
+            values = Object.objects.in_bulk()
+        elif entity == '2':
+            bd_name = 'Графики'
+            values = Graphic.objects.in_bulk()
+        else:
+            bd_name = 'такой сущности нет'
+            values = ''
+        catalog = f"""
+            <p>{bd_name}</p>
+        """
+        for id in values:
+            if entity == '1':
+                ans = f"""
+                <p><a href="/get_obj/:{entity}/:{id}">сущность {id}</a><p>
+                <ul>
+                    <li>{values[id].square}</li>
+                    <li>{values[id].address}</li>
+                    <li>{values[id].email_address}</li>
+                    <li>{values[id].object_type}</li>
+                </ul>
+                """
+                catalog += ans
+            elif entity == '2':
+                ans = f"""
+                <p><a href="/get_obj/:{entity}/:{id}">сущность {id}</a><p>
+                <ul>
+                    <li>{values[id].cur_chartType}</li>
+                    <li>{values[id].cur_dataTable}</li>
+                    <li>{values[id].more}</li>
+                    <li>{values[id].cur_title}</li>
+                </ul>
+                """
+                catalog += ans
     else:
-        cur_mes1 = 'нажми на клавишу'
-        cur_mes2 = ''
-    data = {"header": header, "footer": footer, "mes1": cur_mes1, "mes2": cur_mes2}
+        catalog = ''
+    data = {"header": header, "footer": footer, "catalog": catalog, "form": form}
     return render(request, "get_list.html", context=data)
+
+
+def obj(request, n, obj_id):
+    if n == ':1':
+        h1 = 'Объекты'
+        cur_obj = Object.objects.get(id=int(obj_id[1:]))
+        cur_mes = f"""
+        Площадь: {cur_obj.square}
+        Адрес: {cur_obj.address}
+        email: {cur_obj.email_address}
+        тип объекта: {cur_obj.object_type}
+        """
+    elif n == ':2':
+        h1 = 'Графики'
+        cur_obj = Graphic.objects.get(id=int(obj_id[1:]))
+        cur_mes = f"""
+        {cur_obj.cur_chartType}
+        {cur_obj.cur_dataTable}
+        {cur_obj.more}
+        {cur_obj.cur_title}
+        """
+    else:
+        h1 = 'что-то не так'
+        cur_obj = ''
+    data = {"header": header, "footer": footer, "h1": h1, "catalog": cur_mes}
+    return render(request, "obj.html", context=data)
 
 
 def about(request):
